@@ -1,0 +1,13 @@
+{
+  "name": "sui-tunneling",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Programmable Tunnels on Sui — a faithful teaching state-channel, reverse-engineered from the 6M TPS contract. SuiHub Lagos, Day 3.",
+  "scripts": {
+    "e2e": "node scripts/tunnel-e2e.mjs"
+  },
+  "dependencies": {
+    "@mysten/sui": "^1.30.0"
+  }
+}

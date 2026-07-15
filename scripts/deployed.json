@@ -1,0 +1,7 @@
+{
+  "network": "testnet",
+  "rpc": "https://sui-testnet-rpc.publicnode.com",
+  "packageId": "0x9bd35322a0e12f0339f7af281838e0ae40ce15238c3a75b55cae8e421afc1c4e",
+  "publishedDigest": "8XmQsWiMukERRuU7FSQLBAaKy85pFdYLoSPJE2pvn8dn",
+  "realTunnelContract": "0x7bc4229270cd186434c39a65f9c93933edf8156acac8d1ad288dedfc9d5ccf2c"
+}
