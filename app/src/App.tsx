@@ -509,8 +509,9 @@ export default function App() {
       </section>
 
       <footer className="foot">
-        tunnels_edu::channel on testnet · <span className="mono">{short(CONFIG.packageId)}</span> ·
-        SuiHub Lagos · github.com/Nuel-osas/tunneling
+        tunnels_edu::channel on testnet · <span className="mono">{short(CONFIG.packageId)}</span> ·{" "}
+        <a href="/explain.html">how it works, step by step</a> · SuiHub Lagos ·
+        github.com/Nuel-osas/tunneling
       </footer>
     </div>
   );

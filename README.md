@@ -3,6 +3,13 @@
 Reverse-engineer the state-channel pattern behind Sui's **6M TPS** experiment, and
 build a **faithful, working mini-version** — verified end to end on testnet.
 
+**🎮 Live demo: [tunnel-playground.vercel.app](https://tunnel-playground.vercel.app)** —
+one channel, four apps (💸 pay · 💬 chat · ⏱ stream · ✊ game), real testnet
+transactions, a cheat/dispute simulation, and a ♻ recover button that sweeps the demo
+funds back. **📖 The explainer:
+[tunnel-playground.vercel.app/explain.html](https://tunnel-playground.vercel.app/explain.html)** —
+the whole mechanism, step by step with diagrams.
+
 **The honest framing:** Programmable Tunnels has **no public SDK or docs**. But the
 6M-TPS experiment *settled on-chain*, so the real contract is public. We dissect it
 straight off testnet, then reproduce the core pattern ourselves.
@@ -19,10 +26,15 @@ cheating pointless: any stale state is beaten by a newer co-signed one.
 
 | Path | What it is |
 |---|---|
-| `move/sources/channel.move` | **`tunnels_edu::channel`** — a faithful slimmed tunnel: shared `Tunnel`, two parties (ed25519 keys), pooled balance, co-signed `update`/`close_cooperative`, and a dispute court (`raise_dispute` → `resolve_dispute` → `force_close`). |
+| `app/` | **The Tunnel Playground** — the live web demo. Two in-browser keypairs, real open/settle txs with explorer links, a co-signed "notepad", pay/chat/stream/game tabs, cheat demo, ♻ recover. `/api/fund` sponsor endpoint (Vite plugin in dev, Vercel function in prod). |
+| `app/src/lib/tunnel.ts` | **The reusable client** (~200 lines) — keys, the BCS state message, co-signing, and the five chain calls. Copy this into your own project. |
+| `move/sources/channel.move` | **`tunnels_edu::channel`** — a faithful slimmed tunnel: shared `Tunnel`, two parties (ed25519 keys), pooled balance, co-signed `close_cooperative`, and a dispute court (`raise_dispute` → `resolve_dispute` → `force_close`). |
 | `move/tests/` | `sui move test` — state-machine coverage (open/fund/activate, guards, dispute timing, settlement). |
 | `scripts/tunnel-e2e.mjs` | Real end-to-end on testnet: open → 5 off-chain co-signed updates → cooperative settle, **and** a dispute where a stale state is overridden. |
-| `docs/tunnels-explained.md` | Teaching reference — the real contract + our mini-version. |
+| `scripts/verify-app-flow.mjs` | Drives the app's live `/api/fund` + the full playground flow, headlessly. |
+| `docs/FAQ.md` | **The questions everyone asks** — who creates it, where states live, do you need Move, deposits, 1-player, transport, what 6M measures. |
+| `docs/tunnels-explained.md` | Teaching reference — the real contract + our mini-version, end to end. |
+| `docs/reverse-engineering.md` | The full dossier: how the real contract was recovered from one settlement tx (explorer → object → package → ABI). |
 | `docs/real-tunnel-abi.json` | The actual deployed contract's `tunnel` module ABI, pulled off testnet. |
 
 ## The real contract (reverse-engineered)
@@ -38,11 +50,16 @@ monotonic nonce, cooperative close, dispute-by-higher-nonce + timeout).
 ```bash
 pnpm install
 cd move && sui move test          # state-machine tests
-cd .. && SPONSOR_KEY=suiprivkey1... pnpm e2e   # real tunnel on testnet
+cd .. && SPONSOR_KEY=suiprivkey1... pnpm e2e   # real tunnel on testnet (CLI)
+
+# the playground, locally
+cd app && pnpm install && SPONSOR_KEY=suiprivkey1... pnpm dev   # http://localhost:5175
+node ../scripts/verify-app-flow.mjs                             # drive it headlessly
 ```
 
 `SPONSOR_KEY` is any funded testnet key (funds Alice/Bob's gas + deposits):
-`sui keytool export --key-identity <addr> --json`.
+`sui keytool export --key-identity <addr> --json`. To deploy your own playground:
+import the repo on Vercel with root directory `app` and set `SPONSOR_KEY` in the env.
 
 ## Verified on testnet
 

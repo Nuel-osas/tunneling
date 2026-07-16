@@ -1,0 +1,641 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Programmable Tunnels — Explained Step by Step</title>
+<style>
+  :root {
+    --bg: #faf8f5; --surface: #ffffff; --text: #1e1710; --muted: #6b5f52;
+    --border: #ece4da; --hair: #f2ece4; --accent: #ea580c; --accent2: #c2410c;
+    --tint: #fdf1e8; --canvas: #17120d; --canvas-border: #2c2118;
+    --good: #16a34a; --bad: #dc2626;
+    --shadow: 0 1px 2px rgba(30,23,16,.04), 0 10px 30px rgba(30,23,16,.07);
+    --display: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --body: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --mono: ui-monospace, "SF Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #12100c; --surface: #1b1712; --text: #ece5db; --muted: #a89a89;
+      --border: #2c251d; --hair: #221d16; --accent: #fb923c; --accent2: #f59e0b;
+      --tint: #241a12; --canvas: #17120d; --canvas-border: #2c2118;
+      --good: #4ade80; --bad: #f87171;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 34px rgba(0,0,0,.38);
+    }
+  }
+  :root[data-theme="light"] {
+    --bg: #faf8f5; --surface: #ffffff; --text: #1e1710; --muted: #6b5f52;
+    --border: #ece4da; --hair: #f2ece4; --accent: #ea580c; --accent2: #c2410c;
+    --tint: #fdf1e8; --canvas: #17120d; --canvas-border: #2c2118;
+    --good: #16a34a; --bad: #dc2626;
+    --shadow: 0 1px 2px rgba(30,23,16,.04), 0 10px 30px rgba(30,23,16,.07);
+  }
+  :root[data-theme="dark"] {
+    --bg: #12100c; --surface: #1b1712; --text: #ece5db; --muted: #a89a89;
+    --border: #2c251d; --hair: #221d16; --accent: #fb923c; --accent2: #f59e0b;
+    --tint: #241a12; --canvas: #17120d; --canvas-border: #2c2118;
+    --good: #4ade80; --bad: #f87171;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 34px rgba(0,0,0,.38);
+  }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--body); line-height: 1.55; -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 800px; margin: 0 auto; padding: 0 22px 80px; }
+
+  header.top { padding: 58px 0 22px; }
+  .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--accent); margin: 0 0 14px; }
+  h1 { font-family: var(--display); font-weight: 800; letter-spacing: -.03em; font-size: clamp(30px, 5.4vw, 50px); line-height: 1.02; margin: 0 0 16px; text-wrap: balance; }
+  .lede { font-size: 17px; color: var(--muted); margin: 0; }
+  .lede b { color: var(--text); font-weight: 650; }
+
+  nav.jump { position: sticky; top: 0; z-index: 5; display: flex; flex-wrap: wrap; gap: 7px; padding: 13px 0; margin-top: 22px; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--hair); }
+  nav.jump a { font-family: var(--mono); font-size: 12px; text-decoration: none; color: var(--text); padding: 5px 11px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); transition: border-color .15s, color .15s, transform .15s; }
+  nav.jump a:hover { transform: translateY(-1px); border-color: var(--accent); color: var(--accent); }
+
+  section.sec { padding-top: 46px; scroll-margin-top: 60px; }
+  .seclabel { font-family: var(--mono); font-size: 12px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); margin: 0 0 5px; }
+  .sec h2 { font-family: var(--display); font-weight: 800; letter-spacing: -.02em; font-size: clamp(22px, 3.6vw, 30px); margin: 0 0 8px; text-wrap: balance; }
+  .rule { height: 3px; width: 44px; border-radius: 3px; background: var(--accent); margin-bottom: 16px; }
+  .sec > p { color: var(--muted); margin: 0 0 18px; }
+  .sec > p.plain { color: var(--text); }
+
+  .steps { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow); padding: 6px 22px; margin: 18px 0; }
+  .step { display: flex; gap: 16px; padding: 18px 0; border-top: 1px solid var(--hair); }
+  .step:first-child { border-top: none; }
+  .stepnum { flex: 0 0 auto; width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: #fff; font-family: var(--mono); font-weight: 700; font-size: 14px; display: grid; place-items: center; }
+  .step .b { flex: 1; min-width: 0; }
+  .step h4 { margin: 3px 0 5px; font-family: var(--display); font-size: 16.5px; letter-spacing: -.01em; }
+  .step p { margin: 0; color: var(--muted); font-size: 14.5px; }
+  .step p + p { margin-top: 7px; }
+  .step code, .sec code, .callout code { font-family: var(--mono); font-size: .88em; background: var(--tint); padding: 1px 6px; border-radius: 5px; color: var(--accent2); }
+
+  .callout { border-left: 3px solid var(--accent); background: var(--tint); border-radius: 0 12px 12px 0; padding: 15px 18px; margin: 18px 0; }
+  .callout .clabel { font-family: var(--mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); font-weight: 700; }
+  .callout p { margin: 6px 0 0; font-size: 15px; }
+  .callout p b { font-weight: 700; }
+
+  .exwrap { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow); overflow: hidden; margin: 18px 0; }
+  .exhead { padding: 14px 18px 12px; font-family: var(--display); font-weight: 700; font-size: 15.5px; }
+  .extable { overflow-x: auto; }
+  table.ex { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 460px; }
+  table.ex th, table.ex td { padding: 9px 16px; text-align: left; border-top: 1px solid var(--hair); }
+  table.ex thead th { font-family: var(--mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); border-top: none; }
+  table.ex .num { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  table.ex tr.hi td { background: var(--tint); font-weight: 650; }
+  .exnote { padding: 11px 18px 15px; color: var(--muted); font-size: 13.5px; border-top: 1px solid var(--hair); }
+
+  figure.diagram { margin: 18px 0; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow); overflow: hidden; }
+  .dcap { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 15px 20px 11px; font-family: var(--display); font-weight: 700; font-size: 15.5px; }
+  .dlabel { font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: .06em; padding: 4px 9px; border-radius: 7px; color: #fff; background: var(--accent); white-space: nowrap; }
+  .canvas { background: var(--canvas); border-top: 1px solid var(--canvas-border); border-bottom: 1px solid var(--canvas-border); padding: 22px 16px; overflow-x: auto; }
+  .canvas pre.mermaid { margin: 0; text-align: center; min-width: 480px; }
+
+  dl.terms { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow); padding: 8px 22px 20px; margin: 18px 0 0; }
+  dl.terms dt { font-family: var(--display); font-weight: 700; font-size: 15.5px; margin-top: 16px; }
+  dl.terms dd { margin: 3px 0 0; color: var(--muted); font-size: 14.5px; }
+
+  footer.foot { margin-top: 56px; padding-top: 22px; border-top: 1px solid var(--hair); color: var(--muted); font-size: 13px; display: flex; flex-wrap: wrap; gap: 6px 18px; justify-content: space-between; }
+  footer.foot code { font-family: var(--mono); font-size: 12px; color: var(--text); background: none; }
+  @media (max-width: 540px) { .canvas { padding: 16px 10px; } }
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <header class="top">
+    <p class="eyebrow">Sui Stack 2026 · Day 3 · SuiHub Lagos</p>
+    <h1>Programmable Tunnels, from Scratch</h1>
+    <p class="lede">A slow, spelled-out walkthrough of the idea behind the <b>6,086,766 TPS</b> experiment. No jargon assumed. We build the mental model one piece at a time, with a worked example you can follow line by line.</p>
+    <nav class="jump">
+      <a href="#why">Why</a>
+      <a href="#open">1 · Open</a>
+      <a href="#update">2 · Update</a>
+      <a href="#example">3 · Example</a>
+      <a href="#close">4 · Settle</a>
+      <a href="#dispute">5 · Disputes</a>
+      <a href="#rules">6 · Safety</a>
+      <a href="#htlc">7 · Multi-hop</a>
+      <a href="#real">8 · Real contract</a>
+      <a href="#racing">9 · Racing game</a>
+      <a href="#arch">10 · Architecture</a>
+      <a href="#setup">11 · From scratch</a>
+      <a href="#glossary">Glossary</a>
+    </nav>
+  </header>
+
+  <section class="sec" id="why">
+    <div class="rule"></div>
+    <p class="seclabel">Start here</p>
+    <h2>Why tunnels exist</h2>
+    <p class="plain">On a blockchain, <b>every</b> payment is a transaction: the whole network has to agree on it. That's fine for one payment. It's terrible if two people (or two AI agents) want to pay each other <b>hundreds of times a second</b> — you'd drown in fees and waiting.</p>
+    <div class="callout">
+      <span class="clabel">The analogy — a bar tab</span>
+      <p>You don't pay the bartender for <b>each</b> drink. You open a tab, they keep a running total, and you settle <b>once</b> when you leave. A tunnel is a bar tab between two parties, enforced by math instead of trust.</p>
+    </div>
+    <figure class="diagram">
+      <figcaption class="dcap"><span class="dlabel">The whole point</span>100 payments: 100 transactions vs 2</figcaption>
+      <div class="canvas">
+<pre class="mermaid">
+%%{init:{'theme':'base','themeVariables':{'primaryColor':'#c2410c','primaryBorderColor':'#fdba74','primaryTextColor':'#ffffff','lineColor':'#fdba74','textColor':'#f2e8dd','titleColor':'#ffffff','clusterBkg':'#211812','clusterBorder':'#6b4327','edgeLabelBackground':'#fbeee3','fontFamily':'ui-sans-serif, system-ui','fontSize':'13px'}}}%%
+flowchart TB
+  subgraph a [Without a tunnel]
+    direction LR
+    W1[pay · tx] --> W2[pay · tx] --> W3[pay · tx] --> W4[... 100 txs]
+  end
+  subgraph b [With a tunnel]
+    direction LR
+    O[open · tx] --> M[100 payments<br/>off-chain, signed] --> S[settle · tx]
+  end
+</pre>
+      </div>
+    </figure>
+    <p>Same 100 payments. Without a tunnel: 100 transactions, 100 fees, 100 waits. With a tunnel: <b>2 transactions</b> total, and everything in between is just two people signing messages to each other. Signing is instant and free — that's where "millions per second" comes from.</p>
+  </section>
+
+  <section class="sec" id="open">
+    <div class="rule"></div>
+    <p class="seclabel">Step 1</p>
+    <h2>Opening the tunnel</h2>
+    <p>Before you can run a tab, you set it up on-chain. This is the first of the only two transactions.</p>
+    <div class="steps">
+      <div class="step"><div class="stepnum">1</div><div class="b">
+        <h4>Create the tunnel</h4>
+        <p>Alice creates a shared <code>Tunnel</code> object and names both parties. For each party it records their <b>address</b> and their <b>public key</b> — the key it will later use to check that a message was really signed by them.</p>
+      </div></div>
+      <div class="step"><div class="stepnum">2</div><div class="b">
+        <h4>Both parties deposit</h4>
+        <p>Alice puts in <code>0.06</code>, Bob puts in <code>0.04</code>. The money now lives <b>inside the tunnel</b> — a shared vault. Neither can take it out unilaterally.</p>
+      </div></div>
+      <div class="step"><div class="stepnum">3</div><div class="b">
+        <h4>The tunnel goes Active</h4>
+        <p>Once both have funded, the tunnel flips to <b>Active</b> and its starting balances are just the deposits: Alice <code>0.06</code>, Bob <code>0.04</code>. From here on, everything happens off-chain.</p>
+      </div></div>
+    </div>
+    <div class="callout">
+      <span class="clabel">Why record the public keys?</span>
+      <p>Later, every change to who-owns-what has to be <b>signed by both parties</b>. The tunnel stores their keys now so it can verify those signatures at settlement — without needing anyone online.</p>
+    </div>
+  </section>
+
+  <section class="sec" id="update">
+    <div class="rule"></div>
+    <p class="seclabel">Step 2 · the core idea</p>
+    <h2>A single off-chain update</h2>
+    <p>This is the heart of the whole thing. A "payment" inside the tunnel is just a new agreement on the balances, that <b>both people sign</b>. It never touches the chain.</p>
+    <p class="plain">Every agreement is called a <b>state</b>. A state has four parts:</p>
+    <div class="steps">
+      <div class="step"><div class="stepnum">a</div><div class="b">
+        <h4><code>nonce</code> — a version number</h4>
+        <p>Starts at 1 and goes up by one every update. It tells everyone which agreement is <b>newer</b>. This one number is what makes cheating impossible (more in §6).</p>
+      </div></div>
+      <div class="step"><div class="stepnum">b</div><div class="b">
+        <h4><code>party_a_balance</code> &amp; <code>party_b_balance</code></h4>
+        <p>Who owns what, <b>right now</b>. If Alice pays Bob 0.01, the new state just says Alice has 0.01 less and Bob has 0.01 more.</p>
+      </div></div>
+      <div class="step"><div class="stepnum">c</div><div class="b">
+        <h4><code>state_hash</code> — a private fingerprint</h4>
+        <p>A short fingerprint of <b>what happened</b> off-chain (the messages, the game moves). The details stay private; only the fingerprint is committed, so the settlement can prove "this is the real history" without revealing it.</p>
+      </div></div>
+    </div>
+    <figure class="diagram">
+      <figcaption class="dcap"><span class="dlabel">One update</span>How a state becomes "the truth"</figcaption>
+      <div class="canvas">
+<pre class="mermaid">
+%%{init:{'theme':'base','themeVariables':{'primaryColor':'#c2410c','primaryBorderColor':'#fdba74','primaryTextColor':'#ffffff','lineColor':'#fdba74','textColor':'#f2e8dd','titleColor':'#ffffff','clusterBkg':'#211812','clusterBorder':'#6b4327','edgeLabelBackground':'#fbeee3','fontFamily':'ui-sans-serif, system-ui','fontSize':'13px'}}}%%
+flowchart LR
+  P[Alice proposes<br/>new balances, nonce+1] --> SA[Alice signs it]
+  SA --> SB[Bob signs it too]
+  SB --> OK([Now it is the truth<br/>— no chain involved])
+</pre>
+      </div>
+    </figure>
+    <div class="callout">
+      <span class="clabel">Key rule #1</span>
+      <p>A state only counts if <b>both parties signed it</b>. You cannot invent a balance in your own favour, because your counterparty's signature has to be on it too. No signature from them = not a valid state.</p>
+    </div>
+  </section>
+
+  <section class="sec" id="example">
+    <div class="rule"></div>
+    <p class="seclabel">Step 3</p>
+    <h2>Worked example: running the tab</h2>
+    <p>Here are five payments where Alice slowly earns from Bob (say Bob is losing a game). Watch the balances shift. Every row is one signed message. <b>Zero of them touch the chain.</b></p>
+    <div class="exwrap">
+      <div class="exhead">Five off-chain updates</div>
+      <div class="extable">
+        <table class="ex">
+          <thead><tr><th>nonce</th><th class="num">Alice</th><th class="num">Bob</th><th>on-chain?</th></tr></thead>
+          <tbody>
+            <tr><td>start</td><td class="num">0.060</td><td class="num">0.040</td><td>opened (1 tx)</td></tr>
+            <tr><td>1</td><td class="num">0.062</td><td class="num">0.038</td><td>no</td></tr>
+            <tr><td>2</td><td class="num">0.064</td><td class="num">0.036</td><td>no</td></tr>
+            <tr><td>3</td><td class="num">0.066</td><td class="num">0.034</td><td>no</td></tr>
+            <tr><td>4</td><td class="num">0.068</td><td class="num">0.032</td><td>no</td></tr>
+            <tr class="hi"><td>5</td><td class="num">0.070</td><td class="num">0.030</td><td>← the one we settle</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="exnote">Notice: Alice + Bob always sums to <code>0.100</code> — the total deposited. And only the <b>last</b> state (nonce 5) ever needs to reach the chain.</p>
+    </div>
+    <div class="callout">
+      <span class="clabel">This is the "6M TPS"</span>
+      <p>Those updates are just signed messages between two parties. Sign a million of them a second and you have a million "transactions" a second — while Sui only ever settles the final one. <b>Both numbers are real; they measure different things.</b></p>
+    </div>
+  </section>
+
+  <section class="sec" id="close">
+    <div class="rule"></div>
+    <p class="seclabel">Step 4 · the happy ending</p>
+    <h2>Settling (cooperative close)</h2>
+    <p>When they're done, they cash out. This is the second and last transaction.</p>
+    <div class="steps">
+      <div class="step"><div class="stepnum">1</div><div class="b">
+        <h4>Take the latest signed state</h4>
+        <p>That's nonce 5: Alice <code>0.070</code>, Bob <code>0.030</code>, with <b>both signatures</b> on it.</p>
+      </div></div>
+      <div class="step"><div class="stepnum">2</div><div class="b">
+        <h4>Submit it once</h4>
+        <p>Either party sends <code>close_cooperative(...)</code> with those balances and both signatures. The contract checks the signatures and that the balances still sum to the deposit.</p>
+      </div></div>
+      <div class="step"><div class="stepnum">3</div><div class="b">
+        <h4>The vault pays out</h4>
+        <p>The tunnel sends Alice <code>0.070</code> and Bob <code>0.030</code>, and marks itself <b>Closed</b>. Done — dozens of payments, two on-chain transactions.</p>
+      </div></div>
+    </div>
+  </section>
+
+  <section class="sec" id="dispute">
+    <div class="rule"></div>
+    <p class="seclabel">Step 5 · the unhappy ending</p>
+    <h2>What if someone cheats or disappears?</h2>
+    <p>The cooperative close needs both parties. What if Bob goes offline — or worse, tries to cash out an <b>old</b> state where he had more money? This is where the design earns its keep.</p>
+    <div class="steps">
+      <div class="step"><div class="stepnum">1</div><div class="b">
+        <h4>Bob cheats: he posts an old state</h4>
+        <p>Bob calls <code>raise_dispute</code> with nonce <b>2</b> (Alice 0.064, Bob 0.036) — a moment when he had more. This starts a <b>countdown timer</b>.</p>
+      </div></div>
+      <div class="step"><div class="stepnum">2</div><div class="b">
+        <h4>Alice overrides with a newer state</h4>
+        <p>Alice is watching. She calls <code>resolve_dispute</code> with nonce <b>4</b> (which they both signed) — a <b>higher</b> nonce. The contract accepts it because it's newer, and replaces Bob's stale claim.</p>
+      </div></div>
+      <div class="step"><div class="stepnum">3</div><div class="b">
+        <h4>The timer runs out</h4>
+        <p>Nobody has an even-newer signed state, so nothing more can change.</p>
+      </div></div>
+      <div class="step"><div class="stepnum">4</div><div class="b">
+        <h4>Anyone force-closes</h4>
+        <p><code>force_close</code> pays out at the <b>highest nonce seen</b> — nonce 4, the honest state. Bob's cheat gained him nothing.</p>
+      </div></div>
+    </div>
+    <figure class="diagram">
+      <figcaption class="dcap"><span class="dlabel">Dispute</span>The newest signed state always wins</figcaption>
+      <div class="canvas">
+<pre class="mermaid">
+%%{init:{'theme':'base','themeVariables':{'primaryColor':'#c2410c','primaryBorderColor':'#fdba74','primaryTextColor':'#ffffff','lineColor':'#fdba74','textColor':'#f2e8dd','titleColor':'#ffffff','clusterBkg':'#211812','clusterBorder':'#6b4327','edgeLabelBackground':'#fbeee3','fontFamily':'ui-sans-serif, system-ui','fontSize':'13px'}}}%%
+flowchart LR
+  R[Bob posts nonce 2<br/>the stale one] --> T{Alice holds<br/>a higher nonce?}
+  T -- yes --> O[Alice posts nonce 4<br/>override] --> W[timer ends]
+  T -- no --> W
+  W --> F[force_close<br/>settle at nonce 4]
+</pre>
+      </div>
+    </figure>
+    <div class="callout">
+      <span class="clabel">The one catch — you must be watching</span>
+      <p>The safety depends on the honest party responding <b>within the dispute window</b>. In real systems, "watchtower" services do this for you so you don't have to stay online. (In our live demo the window is ~20s, which is why that part pauses.)</p>
+    </div>
+  </section>
+
+  <section class="sec" id="rules">
+    <div class="rule"></div>
+    <p class="seclabel">Step 6</p>
+    <h2>The four rules that make it safe</h2>
+    <p>Everything above rests on four checks the contract enforces. If you understand these, you understand tunnels.</p>
+    <div class="steps">
+      <div class="step"><div class="stepnum">1</div><div class="b">
+        <h4>Both must sign</h4>
+        <p>A state is only valid with <b>both</b> signatures. You can't move money to yourself without your counterparty agreeing.</p>
+      </div></div>
+      <div class="step"><div class="stepnum">2</div><div class="b">
+        <h4>The nonce only goes up</h4>
+        <p>A newer (higher-nonce) signed state <b>always beats</b> an older one. So posting a stale, favourable state is pointless — it gets overridden.</p>
+      </div></div>
+      <div class="step"><div class="stepnum">3</div><div class="b">
+        <h4>Balances must conserve</h4>
+        <p>Alice + Bob must always equal the total deposited. You can't conjure money out of the channel or leave some stranded.</p>
+      </div></div>
+      <div class="step"><div class="stepnum">4</div><div class="b">
+        <h4>Disputes have a timeout</h4>
+        <p>The window gives the honest party time to override a stale claim, then finalizes. This is what makes unilateral exit safe when the other side vanishes.</p>
+      </div></div>
+    </div>
+  </section>
+
+  <section class="sec" id="htlc">
+    <div class="rule"></div>
+    <p class="seclabel">Step 7 · going bigger</p>
+    <h2>Paying someone you don't share a tunnel with</h2>
+    <p>Alice has a tunnel with a router, the router has one with Bob. Can Alice pay Bob <b>through</b> the router without trusting it? Yes — with a hash lock (an "HTLC").</p>
+    <div class="steps">
+      <div class="step"><div class="stepnum">1</div><div class="b">
+        <h4>Bob picks a secret</h4>
+        <p>Bob invents a secret <code>s</code> and shares only its fingerprint <code>H = hash(s)</code>.</p>
+      </div></div>
+      <div class="step"><div class="stepnum">2</div><div class="b">
+        <h4>Locks are set along the path</h4>
+        <p>Alice locks a payment to the router: "payable to whoever reveals a secret matching <code>H</code>." The router locks the same to Bob.</p>
+      </div></div>
+      <div class="step"><div class="stepnum">3</div><div class="b">
+        <h4>The secret unlocks it backward</h4>
+        <p>Bob reveals <code>s</code> to claim from the router. The router now knows <code>s</code>, so it claims from Alice. Everyone gets paid — or the locks <b>expire and refund</b>. No hop can steal.</p>
+      </div></div>
+    </div>
+    <figure class="diagram">
+      <figcaption class="dcap"><span class="dlabel">Multi-hop</span>One secret, chained locks</figcaption>
+      <div class="canvas">
+<pre class="mermaid">
+%%{init:{'theme':'base','themeVariables':{'primaryColor':'#c2410c','primaryBorderColor':'#fdba74','primaryTextColor':'#ffffff','lineColor':'#fdba74','textColor':'#f2e8dd','titleColor':'#ffffff','clusterBkg':'#211812','clusterBorder':'#6b4327','edgeLabelBackground':'#fbeee3','fontFamily':'ui-sans-serif, system-ui','fontSize':'13px'}}}%%
+flowchart LR
+  A[Alice] -->|lock: pay if secret matches H| X[Router]
+  X -->|lock: pay if secret matches H| B[Bob]
+  B -.->|reveal secret s| X
+  X -.->|reuse s to claim| A
+</pre>
+      </div>
+    </figure>
+  </section>
+
+  <section class="sec" id="real">
+    <div class="rule"></div>
+    <p class="seclabel">Step 8</p>
+    <h2>The real contract, and how we found it</h2>
+    <p>There's no SDK and no docs for the real thing. But the experiment <b>settled on-chain</b>, so its contract is public. From a single settlement transaction we recovered the whole 8-module ABI, then rebuilt the core ourselves and ran it on testnet.</p>
+    <figure class="diagram">
+      <figcaption class="dcap"><span class="dlabel">Method</span>From one transaction to a working rebuild</figcaption>
+      <div class="canvas">
+<pre class="mermaid">
+%%{init:{'theme':'base','themeVariables':{'primaryColor':'#c2410c','primaryBorderColor':'#fdba74','primaryTextColor':'#ffffff','lineColor':'#fdba74','textColor':'#f2e8dd','titleColor':'#ffffff','clusterBkg':'#211812','clusterBorder':'#6b4327','edgeLabelBackground':'#fbeee3','fontFamily':'ui-sans-serif, system-ui','fontSize':'13px'}}}%%
+flowchart LR
+  X[Settlement tx] --> Y[The Tunnel object]
+  Y --> Z[Its package] --> A[Full Move ABI]
+  A --> M[Our mini-version<br/>tested on testnet]
+</pre>
+      </div>
+    </figure>
+    <figure class="diagram">
+      <figcaption class="dcap"><span class="dlabel">Modules</span>What the full contract contains</figcaption>
+      <div class="canvas">
+<pre class="mermaid">
+%%{init:{'theme':'base','themeVariables':{'primaryColor':'#c2410c','primaryBorderColor':'#fdba74','primaryTextColor':'#ffffff','lineColor':'#fdba74','textColor':'#f2e8dd','titleColor':'#ffffff','clusterBkg':'#211812','clusterBorder':'#6b4327','edgeLabelBackground':'#fbeee3','fontFamily':'ui-sans-serif, system-ui','fontSize':'13px'}}}%%
+flowchart TB
+  TU[tunnel<br/>channel · state · settle · dispute]
+  TU --> HO[hop<br/>HTLC multi-hop routing]
+  TU --> RE[referee<br/>trusted tie-breaker]
+  TU --> ZK[zk_verifier<br/>Groth16 proof settles]
+  TU --> SI[signature]
+  TU --> RA[randomness]
+  TU --> AR[arena_domain<br/>the game it was demoed with]
+  TU --> ER[errors]
+</pre>
+      </div>
+    </figure>
+    <p>We rebuilt <b>tunnel</b>; the rest add routing, trustless dispute (referee + ZK), primitives, and the demo's game domain.</p>
+  </section>
+
+  <section class="sec" id="racing">
+    <div class="rule"></div>
+    <p class="seclabel">09 · A real use case</p>
+    <h2>Building a single-player racing game</h2>
+    <p>Let's make it concrete: an on-chain racing game — one player, time trials, earn as you race. Here's exactly how a tunnel carries it, one piece at a time.</p>
+    <div class="callout">
+      <span class="clabel">Reframe first — "1 player" still needs a second party</span>
+      <p>You race solo (against the clock or AI), but a tunnel always has two sides. The other side is <b>the house</b> — the game itself. You feel alone; the channel is <b>you ↔ house</b>. There is no tunnel with a single address.</p>
+    </div>
+    <div class="callout">
+      <span class="clabel">Do you even need one?</span>
+      <p>Only if money moves <b>many times</b> — entry fees, payouts, credits. If your game has no economy, skip tunnels entirely: just play and post a score. A tunnel is for <b>many paid rounds without a transaction each round</b>.</p>
+    </div>
+    <p class="plain" style="margin-top:22px;"><b>Part A — Set up the game (on-chain, once)</b></p>
+    <div class="steps">
+      <div class="step"><div class="stepnum">1</div><div class="b">
+        <h4>You deposit a bankroll</h4>
+        <p>Your playing credits — say <code>1.00</code>. This is what you race with.</p>
+      </div></div>
+      <div class="step"><div class="stepnum">2</div><div class="b">
+        <h4>The house deposits a prize float</h4>
+        <p>The game puts in <code>1.00</code> too, so it can actually <b>pay your winnings</b>. The tunnel now holds the whole pot.</p>
+      </div></div>
+      <div class="step"><div class="stepnum">3</div><div class="b">
+        <h4>Tunnel goes Active</h4>
+        <p>Starting balances: you <code>1.00</code>, house <code>1.00</code>. From here, you play.</p>
+      </div></div>
+    </div>
+    <p class="plain" style="margin-top:8px;"><b>Part B — Each race (off-chain, fast, repeatable)</b></p>
+    <div class="steps">
+      <div class="step"><div class="stepnum">1</div><div class="b">
+        <h4>You race in the client</h4>
+        <p>Normal real-time gameplay — steering, laps, a target time. <b>None of this is on-chain.</b></p>
+      </div></div>
+      <div class="step"><div class="stepnum">2</div><div class="b">
+        <h4>The race ends → a new balance</h4>
+        <p>Beat the target time? You win. Missed it, or paying to play? You lose the entry fee. Either way it's a small shift.</p>
+      </div></div>
+      <div class="step"><div class="stepnum">3</div><div class="b">
+        <h4>You both co-sign the result</h4>
+        <p>A new state, <code>nonce+1</code>: <b>win</b> → you go up, house goes down; <b>fee/loss</b> → you go down, house goes up. Sign, and race again. No chain touched.</p>
+      </div></div>
+    </div>
+    <div class="exwrap">
+      <div class="exhead">Four races, all off-chain (entry 0.05, win pays back 0.10)</div>
+      <div class="extable">
+        <table class="ex">
+          <thead><tr><th>race</th><th>result</th><th class="num">you</th><th class="num">house</th><th>on-chain?</th></tr></thead>
+          <tbody>
+            <tr><td>start</td><td>deposits</td><td class="num">1.00</td><td class="num">1.00</td><td>open (1 tx)</td></tr>
+            <tr><td>1</td><td>won (+0.05)</td><td class="num">1.05</td><td class="num">0.95</td><td>no</td></tr>
+            <tr><td>2</td><td>missed (−0.05)</td><td class="num">1.00</td><td class="num">1.00</td><td>no</td></tr>
+            <tr><td>3</td><td>won (+0.05)</td><td class="num">1.05</td><td class="num">0.95</td><td>no</td></tr>
+            <tr class="hi"><td>4</td><td>won (+0.05)</td><td class="num">1.10</td><td class="num">0.90</td><td>no</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="exnote">You + house always sums to <code>2.00</code> (the pot). Four races, <b>zero transactions</b> — just four co-signed messages.</p>
+    </div>
+    <p class="plain"><b>Part C — Cash out (on-chain, once)</b></p>
+    <div class="steps">
+      <div class="step"><div class="stepnum">1</div><div class="b">
+        <h4>Settle the net balance</h4>
+        <p>Take the last co-signed state (you <code>1.10</code>, house <code>0.90</code>) and <code>close_cooperative</code>. You walk away with <b>1.10</b>. Two hundred races would still be just <b>two</b> transactions: open and cash out.</p>
+      </div></div>
+    </div>
+    <figure class="diagram">
+      <figcaption class="dcap"><span class="dlabel">Racing flow</span>You vs the house, many rounds, two transactions</figcaption>
+      <div class="canvas">
+<pre class="mermaid">
+%%{init:{'theme':'base','themeVariables':{'primaryColor':'#c2410c','primaryBorderColor':'#fdba74','primaryTextColor':'#ffffff','lineColor':'#fdba74','textColor':'#f2e8dd','titleColor':'#ffffff','clusterBkg':'#211812','clusterBorder':'#6b4327','edgeLabelBackground':'#fbeee3','fontFamily':'ui-sans-serif, system-ui','fontSize':'13px'}}}%%
+flowchart LR
+  subgraph open [On-chain: open once]
+    P[You deposit<br/>bankroll] --> T[Tunnel pot]
+    H[House deposits<br/>prize float] --> T
+  end
+  T --> L[Race off-chain]
+  L --> C[Co-sign result<br/>win: you up · fee: you down]
+  C -->|race again| L
+  L -->|done| S[On-chain: cash out net]
+</pre>
+      </div>
+    </figure>
+    <p class="plain"><b>Part D — Keeping the house honest</b></p>
+    <p>Co-signing already stops theft both ways: the house can't touch your credits without your signature, and you can't claim a win it didn't sign. If either side vanishes, the other <code>force_close</code>s at the last co-signed state. What's left is proving <b>results and fair RNG</b> — build it up in three levels:</p>
+    <div class="steps">
+      <div class="step"><div class="stepnum">v1</div><div class="b">
+        <h4>Trust the house's server</h4>
+        <p>The house computes the result, you both sign it. Ship this first — it reuses the channel almost as-is.</p>
+      </div></div>
+      <div class="step"><div class="stepnum">v2</div><div class="b">
+        <h4>Deterministic replay</h4>
+        <p>Make the race deterministic: <b>same inputs + same seed → one outcome</b>. Co-sign the inputs, and on a dispute a Move function <b>recomputes the winner</b>. Now you don't trust the house's word.</p>
+      </div></div>
+      <div class="step"><div class="stepnum">v3</div><div class="b">
+        <h4>ZK proof + verifiable RNG</h4>
+        <p>Commit-reveal the seed so the house can't rig the track, and prove the outcome with a Groth16 proof. Fully trustless — exactly why the real contract ships <code>randomness</code>, <code>referee</code>, and <code>zk_verifier</code>.</p>
+      </div></div>
+    </div>
+    <div class="callout">
+      <span class="clabel">The one-line version</span>
+      <p>Single-player = <b>you vs the house, many rounds</b>. The tunnel batches every round into one open + one settle; co-signing keeps either side from stealing; determinism + verifiable RNG keep the <b>house</b> honest about your results.</p>
+    </div>
+  </section>
+
+  <!-- ARCHITECTURE -->
+  <section class="sec" id="arch">
+    <div class="rule"></div>
+    <p class="seclabel">10 · The full architecture</p>
+    <h2>Where everything actually lives</h2>
+    <p>The surprise of the whole design: the off-chain states are stored <b>nowhere global</b>. No mempool, no server of record. Each party keeps their own copy, on their own device — and the newest co-signed state <b>is</b> your money claim. It's a bearer instrument: guard it like a key.</p>
+
+    <figure class="diagram">
+      <figcaption class="dcap"><span class="dlabel">System map</span>Two devices, one live connection, a thin line to Sui</figcaption>
+      <div class="canvas">
+<pre class="mermaid">
+%%{init:{'theme':'base','themeVariables':{'primaryColor':'#c2410c','primaryBorderColor':'#fdba74','primaryTextColor':'#ffffff','lineColor':'#fdba74','textColor':'#f2e8dd','titleColor':'#ffffff','clusterBkg':'#211812','clusterBorder':'#6b4327','edgeLabelBackground':'#fbeee3','fontFamily':'ui-sans-serif, system-ui','fontSize':'13px'}}}%%
+flowchart TB
+  subgraph da [Alice's device]
+    A1[app + keypair]
+    A2[latest co-signed state<br/>her copy]
+  end
+  subgraph db [Bob's device / the house server]
+    B1[app + keypair]
+    B2[latest co-signed state<br/>his copy]
+  end
+  da <-->|LIVE connection — WebSocket / WebRTC / relay<br/>proposals + signatures travel here, fast| db
+  da -.->|only open · settle · dispute| SUI[(Sui<br/>Tunnel object + deposits)]
+  db -.->|only open · settle · dispute| SUI
+  W[Watchtower<br/>holds a copy of the latest state] -.->|defends disputes while you sleep| SUI
+  da -.->|sends each new state| W
+</pre>
+      </div>
+    </figure>
+
+    <div class="exwrap">
+      <div class="exhead">What is stored where</div>
+      <div class="extable">
+        <table class="ex">
+          <thead><tr><th>Thing</th><th>Lives on</th><th>Note</th></tr></thead>
+          <tbody>
+            <tr><td>Co-signed states</td><td>each party's device</td><td>two copies in the world; only the NEWEST matters</td></tr>
+            <tr><td>The transcript (messages, moves)</td><td>the parties</td><td>the chain only ever sees its hash</td></tr>
+            <tr><td>Deposits + tunnel object</td><td>Sui</td><td>plus whatever state was last submitted at settle/dispute</td></tr>
+            <tr><td>A backup of the latest state</td><td>watchtower (optional)</td><td>so you can be offline during a dispute window</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="exnote">Two connections, two jobs: a <b>fat</b> one to your counterparty (signing, fast), a <b>thin</b> one to Sui (watching + settling, rare).</p>
+    </div>
+
+    <div class="callout">
+      <span class="clabel">The trade-offs this creates</span>
+      <p><b>Synchronous:</b> both parties must be online to advance state — a tunnel is a live session, not a mailbox. <b>Durability:</b> persist every new state (disk / DB / watchtower); our playground keeps them in browser memory, which is fine for a demo and wrong for production. <b>Liveness vs safety:</b> a dropped connection never loses funds — you just stop, reconnect, or force-close at the last co-signed state.</p>
+    </div>
+  </section>
+
+  <!-- FROM SCRATCH -->
+  <section class="sec" id="setup">
+    <div class="rule"></div>
+    <p class="seclabel">11 · Set it up from scratch</p>
+    <h2>Building your own, step by step</h2>
+    <p>The contract is the smallest part — and it's already written. Here's the whole path from nothing to a working tunnel app, in order.</p>
+
+    <div class="steps">
+      <div class="step"><div class="stepnum">1</div><div class="b">
+        <h4>Get the contract on-chain (no writing needed)</h4>
+        <p>Reuse the published package (<code>tunnels_edu::channel</code>, testnet <code>0x9bd35322…</code>) or publish your own copy: <code>cd move &amp;&amp; sui client publish</code>. One command. The contract is generic — payments, chat, streaming and a game all ran through it unchanged.</p>
+      </div></div>
+      <div class="step"><div class="stepnum">2</div><div class="b">
+        <h4>Build the client</h4>
+        <p>Port <code>app/src/lib/tunnel.ts</code> (~200 lines): keypairs, the BCS <code>StateUpdateData</code> message, <code>coSign</code>, and the five chain calls — create, deposit, close_cooperative, raise/resolve_dispute, force_close. This is where most of your work lives.</p>
+      </div></div>
+      <div class="step"><div class="stepnum">3</div><div class="b">
+        <h4>Wire the transport</h4>
+        <p>A live connection between the parties so proposals and signatures can travel: the game's own WebSocket (player ↔ house), WebRTC (p2p), or a dumb relay. The relay is untrusted plumbing — it can drop messages but can't forge a state, because everything is signed.</p>
+      </div></div>
+      <div class="step"><div class="stepnum">4</div><div class="b">
+        <h4>Persist every state</h4>
+        <p>On every co-signed update, write the newest state to disk / localStorage / your DB — and optionally send a copy to a watchtower. Losing it means trusting your counterparty's copy.</p>
+      </div></div>
+      <div class="step"><div class="stepnum">5</div><div class="b">
+        <h4>Watch the chain</h4>
+        <p>During a dispute window someone must be able to answer with a higher nonce — you (poll or subscribe to the tunnel's events) or a watchtower doing it for you.</p>
+      </div></div>
+      <div class="step"><div class="stepnum">6</div><div class="b">
+        <h4>Settle — and clean up</h4>
+        <p>Cooperative close with the latest state is the happy path (one tx). Force-close after the timeout is the exit when the other side vanishes. Sweep leftovers back to your treasury (the playground's ♻ Recover).</p>
+      </div></div>
+    </div>
+
+    <div class="callout">
+      <span class="clabel">Do you ever write new Move?</span>
+      <p>Only when the chain must judge <b>what happened</b>, not just <b>how much moved</b>. Payments/chat/streaming → reuse as-is. A different token → a ~5-line <code>Balance&lt;T&gt;</code> edit. A game verdict ("did I win?") → write the resolver: referee (v1) → deterministic replay (v2) → ZK proof (v3). Multi-hop/multi-party → crib from the real contract's <code>hop</code> and <code>referee</code> modules.</p>
+    </div>
+
+    <p>Everything referenced here is in the repo: <b>github.com/Nuel-osas/tunneling</b> — <code>move/</code> (the contract + tests), <code>app/</code> (the playground, including the client lib and the funder endpoint), <code>scripts/tunnel-e2e.mjs</code> (the full flow as one readable script). And the live playground to poke: <b>tunnel-playground.vercel.app</b>.</p>
+  </section>
+
+  <section class="sec" id="glossary">
+    <div class="rule"></div>
+    <p class="seclabel">Reference</p>
+    <h2>Glossary</h2>
+    <dl class="terms">
+      <dt>Tunnel (state channel)</dt>
+      <dd>A shared on-chain vault between two parties that lets them transact off-chain and settle the net result once.</dd>
+      <dt>State</dt>
+      <dd>One agreed snapshot of the balances, plus a nonce and a fingerprint — signed by both parties.</dd>
+      <dt>Nonce</dt>
+      <dd>A version number that increases every update. Higher nonce = newer = wins.</dd>
+      <dt>Co-signed</dt>
+      <dd>Signed by both parties. Only co-signed states are valid.</dd>
+      <dt>Cooperative close</dt>
+      <dd>The happy-path settlement: both agree on the final state and cash out in one transaction.</dd>
+      <dt>Dispute</dt>
+      <dd>Unilateral settlement when the other party won't cooperate. A timer + higher-nonce override protect the honest side.</dd>
+      <dt>HTLC</dt>
+      <dd>Hash Time-Locked Contract — a lock that pays whoever reveals a secret before a deadline. Lets payments route across hops safely.</dd>
+      <dt>state_hash</dt>
+      <dd>A fingerprint of the off-chain history, so settlement can commit to the truth without revealing the details.</dd>
+    </dl>
+  </section>
+
+  <footer class="foot">
+    <span>Sui Stack 2026 · Day 3 · SuiHub Lagos · Ruru (@minting_ruru)</span>
+    <span><code>github.com/Nuel-osas/tunneling</code></span>
+  </footer>
+</div>
+
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true });
+</script>
+</body>
+</html>
