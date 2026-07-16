@@ -139,3 +139,5 @@ h1 { font-size: clamp(26px, 4vw, 38px); font-weight: 800; letter-spacing: -0.03e
   background: transparent; color: var(--good); font-weight: 700; font-size: 13.5px; cursor: pointer;
 }
 .recover:hover { background: color-mix(in srgb, var(--good) 8%, transparent); }
+.recoverHint { margin: 2px 0 0; font-size: 12px; color: var(--muted); text-align: center; }
+.recoverHint b { color: var(--text); }

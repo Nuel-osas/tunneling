@@ -211,6 +211,11 @@ export default function App() {
         }
       }
       setSwept(true);
+      if (phase === "funded") {
+        // cancelled before opening — the session is over
+        setPhase("closed");
+        setFinalNote("Session cancelled — funds recovered to the sponsor. Refresh the page for a new session.");
+      }
       setStatus(
         recovered > 0n
           ? `♻ Recovered ~${fmt(recovered)} SUI back to the sponsor (${short(sponsorAddr)}). Session fully cleaned up.`
@@ -440,7 +445,14 @@ export default function App() {
 
           <div className="actions">
             {phase === "idle" && <button className="primary" onClick={doFund}>1 · Fund Alice &amp; Bob</button>}
-            {phase === "funded" && <button className="primary" onClick={doOpen}>2 · Open the tunnel (on-chain)</button>}
+            {phase === "funded" && (
+              <>
+                <button className="primary" onClick={doOpen}>2 · Open the tunnel (on-chain)</button>
+                <button className="recover" onClick={doRecover}>
+                  ♻ Cancel — recover the SUI to the sponsor
+                </button>
+              </>
+            )}
             {phase === "active" && (
               <>
                 <button className="primary" disabled={states.length === 0 || busy} onClick={doSettle}>
@@ -449,6 +461,10 @@ export default function App() {
                 <button className="danger" disabled={states.length < 2 || busy} onClick={doCheat}>
                   😈 Simulate Bob cheating
                 </button>
+                <p className="recoverHint">
+                  ♻ The funds are locked in the tunnel while it's open — after you <b>settle</b>, a
+                  Recover button sweeps all leftover SUI back to the sponsor.
+                </p>
               </>
             )}
             {(phase === "funding" || phase === "opening" || phase === "settling" || phase === "cheating") && (
