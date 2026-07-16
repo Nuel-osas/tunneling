@@ -40,7 +40,7 @@ export default async function handler(req, res) {
       options: { showEffects: true },
     });
     await client.waitForTransaction({ digest: out.digest });
-    res.status(200).json({ digest: out.digest });
+    res.status(200).json({ digest: out.digest, funder: funder.getPublicKey().toSuiAddress() });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

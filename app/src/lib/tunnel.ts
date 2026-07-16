@@ -53,13 +53,28 @@ async function exec(signer: Ed25519Keypair, tx: Transaction, label: string): Pro
   return { label, digest: res.digest, objectChanges: res.objectChanges ?? undefined };
 }
 
-export async function fundPair(alice: string, bob: string): Promise<void> {
+export async function fundPair(alice: string, bob: string): Promise<{ funder?: string }> {
   const res = await fetch(CONFIG.fundEndpoint, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ addresses: [alice, bob] }),
   });
   if (!res.ok) throw new Error(`fund failed (${res.status}): ${await res.text()}`);
+  return res.json();
+}
+
+// Sweep a party's ENTIRE remaining SUI back to `to`: transferring the gas coin
+// itself sends everything left after the (tiny) fee.
+export async function sweepAll(
+  who: Ed25519Keypair,
+  to: string,
+  label: string,
+): Promise<ChainTx | null> {
+  const bal = await suiBalance(who.toSuiAddress());
+  if (bal < 35_000_000n) return null; // must clear exec's 0.03 gas budget; below that it's dust
+  const tx = new Transaction();
+  tx.transferObjects([tx.gas], tx.pure.address(to));
+  return exec(who, tx, label);
 }
 
 export async function suiBalance(addr: string): Promise<bigint> {

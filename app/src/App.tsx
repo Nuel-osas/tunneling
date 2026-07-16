@@ -13,6 +13,7 @@ import {
   raiseDispute,
   resolveDispute,
   suiBalance,
+  sweepAll,
 } from "./lib/tunnel";
 import { CONFIG, explorerTx, fmt } from "./config";
 
@@ -59,6 +60,8 @@ export default function App() {
   const [finalNote, setFinalNote] = useState<string | null>(null);
   const [chatText, setChatText] = useState("");
   const [streaming, setStreaming] = useState(false);
+  const [sponsorAddr, setSponsorAddr] = useState<string>(CONFIG.sponsorAddress);
+  const [swept, setSwept] = useState(false);
   const busyRef = useRef(false);
   const stateRef = useRef({ balA, balB, states, events, tunnelId });
   stateRef.current = { balA, balB, states, events, tunnelId };
@@ -110,7 +113,8 @@ export default function App() {
       "Funding Alice & Bob with testnet SUI (one funder tx)",
       async () => {
         setPhase("funding");
-        await fundPair(A, B);
+        const fr = await fundPair(A, B);
+        if (fr.funder) setSponsorAddr(fr.funder);
         for (let i = 0; i < 20; i++) {
           const [ba, bb] = await Promise.all([suiBalance(A), suiBalance(B)]);
           if (ba > 0n && bb > 0n) break;
@@ -185,6 +189,39 @@ export default function App() {
       },
       "closed",
     );
+
+  const doRecover = async () => {
+    if (busyRef.current) return;
+    busyRef.current = true;
+    try {
+      setStatus("Recovering leftover SUI back to the sponsor wallet…");
+      // payout coins can take a beat to index after settle — wait until visible
+      for (let i = 0; i < 12; i++) {
+        const [ba, bb] = await Promise.all([suiBalance(A), suiBalance(B)]);
+        if (ba > 35_000_000n || bb > 35_000_000n) break;
+        await new Promise((r) => setTimeout(r, 1000));
+      }
+      let recovered = 0n;
+      for (const [kp, name] of [[alice, "Alice"], [bob, "Bob"]] as const) {
+        const before = await suiBalance(kp.toSuiAddress());
+        const t = await sweepAll(kp, sponsorAddr, `♻ ${name} returns leftovers to sponsor`);
+        if (t) {
+          addTx(t);
+          recovered += before;
+        }
+      }
+      setSwept(true);
+      setStatus(
+        recovered > 0n
+          ? `♻ Recovered ~${fmt(recovered)} SUI back to the sponsor (${short(sponsorAddr)}). Session fully cleaned up.`
+          : "Nothing left to recover (balances were dust).",
+      );
+    } catch (e) {
+      setStatus(`❌ recover failed: ${(e as Error).message}`);
+    } finally {
+      busyRef.current = false;
+    }
+  };
 
   // ---- use cases ----
   const pay = (from: "A" | "B") =>
@@ -417,7 +454,16 @@ export default function App() {
             {(phase === "funding" || phase === "opening" || phase === "settling" || phase === "cheating") && (
               <button className="primary" disabled>working…</button>
             )}
-            {phase === "closed" && <p className="done">✅ {finalNote}</p>}
+            {phase === "closed" && (
+              <>
+                <p className="done">✅ {finalNote}</p>
+                {!swept && (
+                  <button className="recover" onClick={doRecover}>
+                    ♻ Recover leftover SUI to the sponsor
+                  </button>
+                )}
+              </>
+            )}
           </div>
         </section>
 

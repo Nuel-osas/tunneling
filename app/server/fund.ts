@@ -52,7 +52,7 @@ export function fundPlugin() {
             options: { showEffects: true },
           });
           await client.waitForTransaction({ digest: out.digest });
-          res.end(JSON.stringify({ digest: out.digest }));
+          res.end(JSON.stringify({ digest: out.digest, funder: funder.getPublicKey().toSuiAddress() }));
         } catch (e) {
           res.statusCode = 500;
           res.end(JSON.stringify({ error: (e as Error).message }));

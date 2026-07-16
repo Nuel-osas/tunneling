@@ -133,3 +133,9 @@ h1 { font-size: clamp(26px, 4vw, 38px); font-weight: 800; letter-spacing: -0.03e
 .fingerprint { margin: 10px 0 0; font-size: 11.5px; color: var(--muted); }
 
 .picon { font-size: 13px; }
+
+.recover {
+  padding: 12px; border-radius: 10px; border: 1px solid var(--good);
+  background: transparent; color: var(--good); font-weight: 700; font-size: 13.5px; cursor: pointer;
+}
+.recover:hover { background: color-mix(in srgb, var(--good) 8%, transparent); }

@@ -6,6 +6,9 @@ export const CONFIG = {
   packageId: "0x9bd35322a0e12f0339f7af281838e0ae40ce15238c3a75b55cae8e421afc1c4e",
   clock: "0x6",
   fundEndpoint: "/api/fund",
+  // where "♻ Recover" sweeps leftover demo SUI back to (the funder wallet).
+  // overridden at runtime by whatever address /api/fund reports.
+  sponsorAddress: "0x9a5b0ad3a18964ab7c0dbf9ab4cdecfd6b3899423b47313ae6e78f4b801022a3",
   // demo economics (MIST)
   fundAmount: 100_000_000n, // 0.1 SUI each — deposit 0.05 + gas (~0.003/tx)
   deposit: 50_000_000n, // 0.05 SUI each side
