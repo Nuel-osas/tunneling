@@ -1,9 +1,0 @@
-{
-  "name": "tunnel-conductor-poc",
-  "private": true,
-  "type": "module",
-  "dependencies": {
-    "@mysten/sui": "^1.45.0",
-    "@noble/curves": "^1.6.0"
-  }
-}
