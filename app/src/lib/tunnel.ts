@@ -106,6 +106,13 @@ export async function depositTo(
   return exec(who, tx, label);
 }
 
+// SHA-256 of the off-chain transcript — the 32-byte fingerprint the chain commits.
+export async function hashTranscript(transcript: unknown): Promise<Uint8Array> {
+  const bytes = new TextEncoder().encode(JSON.stringify(transcript));
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return new Uint8Array(digest);
+}
+
 // One OFF-CHAIN co-signed update. No transaction — just two signatures.
 export async function coSign(
   alice: Ed25519Keypair,
@@ -114,10 +121,9 @@ export async function coSign(
   nonce: number,
   a: bigint,
   b: bigint,
-  memo: string,
+  hash: Uint8Array,
 ): Promise<SignedState> {
   const ts = Date.now();
-  const hash = new TextEncoder().encode(memo.padEnd(32, "0")).slice(0, 32);
   const msg = StateUpdateData.serialize({
     tunnel_id: tunnelId,
     state_hash: Array.from(hash),
